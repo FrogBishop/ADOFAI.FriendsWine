@@ -1,0 +1,26 @@
+# Build products and local verification output
+/build/
+/dist/
+/artifacts/
+**/bin/
+**/obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.zip
+
+# Per-machine paths, editor state, runtime settings
+/build.local.ps1
+**/settings.json
+**/settings.json.*
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# The original MP3 and config.default.json are intentional source assets.
