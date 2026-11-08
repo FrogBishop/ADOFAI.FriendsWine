@@ -19,7 +19,7 @@ namespace FriendsWine
     }
 
     // Preserve the actual SpriteRenderer, its materials, and every native visibility
-    // callback. Only its position stream is substituted for the duration of a render.
+    // callback. Substitute geometry for a render while preserving its texture mapping.
     internal sealed class NativeSpriteEffect : RenderEffect
     {
         private static readonly Action<SpriteRenderer, Bounds> setBounds =
@@ -32,6 +32,7 @@ namespace FriendsWine
         private Sprite deformed;
         private Vector2[] originalVertices;
         private NativeArray<Vector3> positions;
+        private NativeArray<Vector2> uvs;
         private Bounds previousBounds;
         private bool applied;
         private SpriteProxy fallback;
@@ -55,7 +56,9 @@ namespace FriendsWine
                 deformed.hideFlags = HideFlags.HideAndDontSave;
                 originalVertices = sprite.vertices;
                 if (positions.IsCreated) positions.Dispose();
+                if (uvs.IsCreated) uvs.Dispose();
                 positions = new NativeArray<Vector3>(originalVertices.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                uvs = new NativeArray<Vector2>(sprite.uv, Allocator.Persistent);
             }
             previousBounds = source.localBounds;
             Bounds geometryBounds = sprite.bounds;
@@ -66,10 +69,11 @@ namespace FriendsWine
                 positions[i] = new Vector3(scale.X == 1 ? p.x : anchor.x + (p.x - anchor.x) * scale.X,
                     scale.Y == 1 ? p.y : anchor.y + (p.y - anchor.y) * scale.Y, 0);
             }
-            // Update only positions: UVs, atlas packing, and the original Sprite asset
-            // are retained. The legacy skinning buffer is ignored by unskinned sprites
-            // in some Unity 6 players, so use an owned Sprite's vertex stream instead.
+            // Unity regenerates UVs when the position channel changes. Restore the
+            // source UVs AFTER every position update, or stretching moves the sampled
+            // texture window instead of stretching the complete image (including atlases).
             deformed.SetVertexAttribute(VertexAttribute.Position, positions);
+            deformed.SetVertexAttribute(VertexAttribute.TexCoord0, uvs);
             source.sprite = deformed;
             applied = true;
             // Keep native visibility stable over the full beat at screen edges. A
@@ -96,6 +100,7 @@ namespace FriendsWine
         {
             End();
             if (positions.IsCreated) positions.Dispose();
+            if (uvs.IsCreated) uvs.Dispose();
             if (deformed) UnityEngine.Object.Destroy(deformed);
             if (fallback != null) fallback.Dispose();
         }

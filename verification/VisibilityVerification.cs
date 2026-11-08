@@ -61,6 +61,14 @@ namespace FriendsWine
             Application.Quit(failures == 0 ? 0 : 1);
         }
 
+        private void LateUpdate()
+        {
+            // Hidden/batch players may skip automatic camera rendering. Advance the
+            // actual renderer visibility callbacks every frame before inspecting the
+            // game's updater; rendering only in Pixels() observes stale material state.
+            if (camera) camera.Render();
+        }
+
         private IEnumerator Run()
         {
             var runtime = RuntimeController.Instance;

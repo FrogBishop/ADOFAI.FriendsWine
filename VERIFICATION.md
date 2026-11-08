@@ -1,5 +1,19 @@
 # 验证记录
 
+## 1.0.3：星球及表情纹理裁切（2026-11-08）
+
+在独立游戏副本中运行测试，未关闭用户原游戏。环境为 Unity 6000.3.25f1 / UMM 0.33.3.0，使用实际 GPU 渲染和像素读回。
+
+- 根因：Unity 的 `Sprite.SetVertexAttribute(Position, ...)` 会重新计算精灵 UV。原实现只写位置，导致纹理取样范围跟着网格变化，出现顶部裁切和两侧重复。现改为缓存原图 UV，并在每次写入位置之后恢复 `TexCoord0`；切换 Sprite 时更换缓存，销毁效果时释放缓存。
+- `artifacts/sprite-texture-baseline/`：四张真实游戏表情贴图 × 横向/纵向/旋转翻转，共 12 组旧路径全部复现像素错误，UV 最大偏差约 0.19～0.36。诊断中显式恢复 UV 后，同一批画面全部与完整图像缩放参照一致。
+- `artifacts/sprite-texture-verified/`：24 组画面、122 项断言全部通过。四张真实表情分别覆盖原状、横向、纵向、旋转翻转和重复横向，复用同一效果对象以覆盖连续帧及切换贴图；另含偏心图集子区域和真实 `ADOFAI/Frames` 星球材质的横纵变形。
+- 像素参照使用原始 Sprite 的完整 Transform 缩放，与模组修改顶点的实现独立。24 组全部为 `mismatchedPixels=0`、`meanChannelError=0`；并断言画面有可见像素、原 UV 保持一致、源 Sprite/Transform 恢复及共享资产未修改。
+- 早期 `sprite-texture-fixed` 的 4 项位置差异来自测试读到切换 Sprite 前的缓存 Renderer 边界。参照改用未修改的源 Sprite 边界后通过；未通过放宽误差阈值来消除差异。
+- `artifacts/sprite-fix-culling/`：17 项通过。一万个离屏/可见对象加一个边缘对象，仍只处理和创建 9 份资源，跳过 9992 份；原生可见性回调、屏幕边缘、多摄像机与恢复均正常。
+- `artifacts/sprite-fix-track-verified/`：41 项轨道出现/消失/透明度检查通过。隐藏测试窗口会跳过自动绘制，因此验证组件改为每帧显式调用实际相机渲染，再检查游戏的原生更新；没有模拟可见性回调或放宽断言。此前两轮轨道测试中的 4 项失败来自没有逐帧绘制的测试环境。
+- `artifacts/sprite-fix-regression-verified/`：28 项基础回归通过，12 个实际渲染帧验证旋转/翻转/嵌套原点和文字缩放；BGM、暂停、启停、循环、原生场景重开、配置及恢复均通过。该验证同样显式绘制相机，并安排在运行时 UI 更新后执行。68 项核心检查通过。
+- 条件编译入口：`build.ps1 -IntegrationTest` 后带 `--friendswine-sprite-texture-test --friendswine-test-output <目录>` 启动游戏，测试完成自动退出。正式 DLL 不包含该入口。
+
 ## 1.0.2：视野裁剪与原渲染器生命周期
 
 环境：2026-11-01，ADOFAI r150（e0229c0，2026/10/30 构建），Unity 6000.3.25f1，UMM 0.33.3.0，Windows 10。

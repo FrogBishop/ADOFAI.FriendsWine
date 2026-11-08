@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 
 namespace FriendsWine
 {
+    [DefaultExecutionOrder(32700)]
     public sealed class IntegrationVerification : MonoBehaviour
     {
         private string output;
@@ -32,6 +33,13 @@ namespace FriendsWine
         private float oldScale;
         private bool oldPause;
         private AudioSource audioSource;
+
+        private void LateUpdate()
+        {
+            // Hidden players can skip the automatic render loop. Draw after the
+            // runtime's UI refresh so native camera callbacks and TMP checks still run.
+            if (testCamera) testCamera.Render();
+        }
 
         private void Check(bool condition, string message)
         {

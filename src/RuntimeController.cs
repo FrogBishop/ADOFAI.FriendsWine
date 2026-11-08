@@ -49,6 +49,8 @@ namespace FriendsWine
                 gameObject.AddComponent<VisibilityVerification>();
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "--friendswine-culling-test") >= 0)
                 gameObject.AddComponent<CullingVerification>();
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "--friendswine-sprite-texture-test") >= 0)
+                gameObject.AddComponent<SpriteTextureVerification>();
 #endif
         }
 
